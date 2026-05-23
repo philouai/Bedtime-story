@@ -16,19 +16,15 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
 body{padding:1.8rem 2rem 3rem;overflow-y:auto}
-
 .header{margin-bottom:1.8rem}
 .header h1{font-family:'Lora',serif;font-size:1.5rem;font-weight:600;color:var(--text);margin-bottom:0.25rem}
 .header p{font-size:0.8rem;color:var(--text-2)}
-
 .panel{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1rem}
 .panel-label{font-size:0.62rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-3);margin-bottom:0.9rem}
-
 .lang-row{display:flex;gap:0.6rem}
 .lang-btn{flex:1;padding:0.6rem 0.5rem;background:var(--bg-2);border:1px solid var(--border-md);border-radius:6px;color:var(--text-2);font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:500;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px}
 .lang-btn:hover{background:var(--bg-3);color:var(--text)}
 .lang-btn.active{background:var(--accent-lo);border-color:rgba(201,168,76,0.35);color:var(--accent)}
-
 .inputs-row{display:flex;gap:1rem;flex-wrap:wrap}
 .input-group{flex:1;min-width:100px}
 .input-group.wide{flex:2}
@@ -36,56 +32,40 @@ body{padding:1.8rem 2rem 3rem;overflow-y:auto}
 input[type="number"],input[type="text"]{width:100%;padding:0.55rem 0.9rem;background:var(--bg-2);border:1px solid var(--border-md);border-radius:6px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.85rem;outline:none;transition:border-color 0.2s;min-height:44px}
 input:focus{border-color:var(--accent)}
 input::placeholder{color:var(--text-3)}
-
 .tag-add-row{display:flex;gap:0.5rem;margin-bottom:0.8rem}
 .tag-add-row input{flex:1}
 .add-btn{padding:0.55rem 0.9rem;background:var(--accent-lo);border:1px solid rgba(201,168,76,0.3);border-radius:6px;color:var(--accent);font-size:1rem;cursor:pointer;transition:background 0.18s;flex-shrink:0;min-height:44px}
 .add-btn:hover{background:var(--accent-md)}
-
 .tags-wrap{display:flex;flex-wrap:wrap;gap:0.45rem;min-height:28px}
 .tag{display:flex;align-items:center;gap:4px;padding:5px 9px 5px 10px;border-radius:20px;font-size:0.78rem;font-weight:500;cursor:pointer;transition:all 0.18s;border:1px solid;user-select:none;min-height:32px}
 .tag.inactive{background:var(--bg-2);border-color:var(--border-md);color:var(--text-3)}
 .tag.active{background:rgba(74,158,232,0.12);border-color:rgba(74,158,232,0.35);color:var(--blue)}
 .tag .x{font-size:0.68rem;opacity:0.45;transition:opacity 0.15s;margin-left:1px}
 .tag:hover .x{opacity:0.9}
-
 .generate-btn{width:100%;padding:0.9rem;background:var(--accent);border:none;border-radius:8px;color:#0C0C10;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px}
 .generate-btn:hover{background:#DDB85A;transform:translateY(-1px)}
 .generate-btn:active{transform:translateY(0)}
 .generate-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none}
-
 .story-out{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:1.5rem 1.6rem;margin-top:1rem;display:none}
 .story-out.visible{display:block}
 .story-out-title{font-family:'Lora',serif;font-size:1.2rem;font-weight:600;color:var(--accent);text-align:center;margin-bottom:1.2rem}
 .story-out-body{font-family:'Lora',serif;font-size:0.97rem;line-height:1.95;color:var(--text-2);white-space:pre-wrap}
-.cursor{display:inline-block;color:var(--accent);animation:blink 0.7s step-end infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-
 .audio-bar{display:flex;align-items:center;gap:12px;margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--border)}
 .play-btn{width:48px;height:48px;border-radius:50%;flex-shrink:0;background:var(--accent-lo);border:1px solid rgba(201,168,76,0.3);color:var(--accent);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.18s}
 .play-btn:hover{background:var(--accent-md)}
-.progress-wrap{flex:1}
 .track{width:100%;height:3px;background:var(--bg-3);border-radius:2px;margin-bottom:5px;overflow:hidden}
 .fill{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width 0.5s linear}
 .times{display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-3)}
-
 .status-bar{display:flex;align-items:center;gap:8px;padding:0.6rem 0.9rem;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;margin-bottom:1rem;font-size:0.78rem;color:var(--text-3)}
 .status-dot{width:7px;height:7px;border-radius:50%;background:var(--text-3);flex-shrink:0}
 .status-dot.ok{background:var(--green)}
 .status-dot.warn{background:#fbbf24}
-
 .tts-note{font-size:0.72rem;color:var(--text-3);margin-top:0.5rem;text-align:center}
 .error-msg{color:var(--red);font-size:0.82rem;text-align:center;padding:0.4rem;margin-top:0.5rem}
-
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border-md);border-radius:2px}
-input[type=number]::-webkit-inner-spin-button{opacity:1}
-
-@media(max-width:500px){
-  body{padding:1.2rem 1rem 2rem}
-  .lang-btn{font-size:0.75rem;padding:0.5rem 0.2rem}
-}
+@media(max-width:500px){body{padding:1.2rem 1rem 2rem}.lang-btn{font-size:0.75rem;padding:0.5rem 0.2rem}}
 </style>
 </head>
 <body>
@@ -95,10 +75,9 @@ input[type=number]::-webkit-inner-spin-button{opacity:1}
   <p>A magical story tailored for your child — text &amp; narration</p>
 </div>
 
-<!-- Key status bar -->
 <div class="status-bar" id="statusBar">
   <div class="status-dot" id="statusDot"></div>
-  <span id="statusText">No API key — add your Gemini key in Dashboard Settings</span>
+  <span id="statusText">Checking API key...</span>
 </div>
 
 <div class="panel">
@@ -134,7 +113,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:1}
   <div class="story-out-body" id="outBody"></div>
   <div class="audio-bar" id="audioBar" style="display:none">
     <button class="play-btn" id="playBtn">▶</button>
-    <div class="progress-wrap">
+    <div style="flex:1">
       <div class="track"><div class="fill" id="fill"></div></div>
       <div class="times"><span id="tElapsed">0:00</span><span id="tDur">--:--</span></div>
     </div>
@@ -152,13 +131,11 @@ let isSpeaking = false;
 let audioEl = null;
 let progressTimer = null;
 
-// ── Receive key from parent dashboard ──
+// Receive key from parent dashboard
 window.addEventListener('message', e => {
   if (e.data?.type === 'GEMINI_KEY') { geminiKey = e.data.key; updateStatus(); }
-  if (e.data?.type === 'ANTHROPIC_KEY') {} // not used
 });
 
-// ── Also check localStorage directly (when opened standalone) ──
 function getKey() {
   return geminiKey || localStorage.getItem('philou_gemini_key') || '';
 }
@@ -167,16 +144,11 @@ function updateStatus() {
   const key = getKey();
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
-  if (key) {
-    dot.className = 'status-dot ok';
-    txt.textContent = 'Gemini connected — free story generation ready';
-  } else {
-    dot.className = 'status-dot warn';
-    txt.textContent = 'No API key — add your Gemini key in Dashboard Settings';
-  }
+  if (key) { dot.className='status-dot ok'; txt.textContent='Gemini connected — ready to generate'; }
+  else { dot.className='status-dot warn'; txt.textContent='No API key — add Gemini key in Dashboard Settings'; }
 }
 
-// ── Language ──
+// Language
 document.querySelectorAll('.lang-btn').forEach(b => {
   b.addEventListener('click', () => {
     document.querySelectorAll('.lang-btn').forEach(x => x.classList.remove('active'));
@@ -185,7 +157,7 @@ document.querySelectorAll('.lang-btn').forEach(b => {
   });
 });
 
-// ── Tags ──
+// Tags
 function renderTags() {
   const w = document.getElementById('tagsWrap');
   w.innerHTML = '';
@@ -207,16 +179,12 @@ function addTag() {
   document.getElementById('tagInput').value = '';
   document.getElementById('tagInput').focus();
 }
-
 document.getElementById('addBtn').onclick = addTag;
 document.getElementById('tagInput').addEventListener('keydown', e => { if(e.key==='Enter') addTag(); });
 
-// ── Time format ──
-function fmt(s) {
-  return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`;
-}
+function fmt(s) { return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`; }
 
-// ── TTS via Google Translate (free, great FR + RU voices) ──
+// TTS
 const LANG_CODES = { english:'en', french:'fr', russian:'ru' };
 
 function stopAudio() {
@@ -230,20 +198,20 @@ function stopAudio() {
 
 function splitChunks(text, maxLen) {
   const sentences = text.match(/[^.!?…\n]+[.!?…\n]*/g) || [text];
-  const chunks = []; let current = '';
+  const chunks = []; let cur = '';
   for (const s of sentences) {
-    if ((current+s).length > maxLen && current) { chunks.push(current.trim()); current = s; }
-    else current += s;
+    if ((cur+s).length > maxLen && cur) { chunks.push(cur.trim()); cur=s; }
+    else cur += s;
   }
-  if (current.trim()) chunks.push(current.trim());
+  if (cur.trim()) chunks.push(cur.trim());
   return chunks;
 }
 
 function playChunks(chunks, idx) {
   if (idx >= chunks.length) {
-    isSpeaking = false;
-    document.getElementById('playBtn').textContent = '▶';
-    document.getElementById('fill').style.width = '100%';
+    isSpeaking=false;
+    document.getElementById('playBtn').textContent='▶';
+    document.getElementById('fill').style.width='100%';
     clearInterval(progressTimer);
     return;
   }
@@ -251,7 +219,6 @@ function playChunks(chunks, idx) {
   const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunks[idx])}&tl=${code}&client=tw-ob`;
   const audio = new Audio(url);
   audioEl = audio;
-
   if (idx === 0) {
     const estSecs = (fullText.split(/\s+/).length / 130) * 60;
     document.getElementById('tDur').textContent = fmt(estSecs);
@@ -261,13 +228,12 @@ function playChunks(chunks, idx) {
       document.getElementById('tElapsed').textContent = fmt(e);
       document.getElementById('fill').style.width = Math.min((e/estSecs)*100,100)+'%';
     }, 500);
-    isSpeaking = true;
-    document.getElementById('playBtn').textContent = '⏸';
+    isSpeaking=true;
+    document.getElementById('playBtn').textContent='⏸';
   }
-
   audio.onended = () => playChunks(chunks, idx+1);
   audio.onerror = () => {
-    document.getElementById('ttsNote').textContent = '⚠ Using browser voice — install system voices for better French/Russian';
+    document.getElementById('ttsNote').textContent = '⚠ Using browser voice — better FR/RU voices available via system settings';
     clearInterval(progressTimer); isSpeaking=false;
     document.getElementById('playBtn').textContent='▶';
     fallbackTTS(fullText);
@@ -306,7 +272,7 @@ document.getElementById('playBtn').addEventListener('click', () => {
   else { document.getElementById('ttsNote').textContent=''; playChunks(splitChunks(fullText,195), 0); }
 });
 
-// ── Generate with Gemini ──
+// Generate with Gemini — non-streaming (most compatible)
 document.getElementById('genBtn').addEventListener('click', async () => {
   stopAudio(); window.speechSynthesis?.cancel();
 
@@ -320,7 +286,7 @@ document.getElementById('genBtn').addEventListener('click', async () => {
   document.getElementById('errMsg').textContent='';
   document.getElementById('ttsNote').textContent='';
   document.getElementById('storyOut').classList.add('visible');
-  document.getElementById('outTitle').textContent='';
+  document.getElementById('outTitle').textContent='⏳ Writing your story...';
   document.getElementById('outBody').textContent='';
   document.getElementById('audioBar').style.display='none';
   document.getElementById('genBtn').disabled=true;
@@ -344,16 +310,10 @@ document.getElementById('genBtn').addEventListener('click', async () => {
 - ${themeStr}
 - ${langMap[lang]}
 
-Start with a title on the first line (just the title, no "Title:" prefix), then a blank line, then the story. Plain text only, no markdown.`;
-
-  const bodyEl = document.getElementById('outBody');
-  const cursor = document.createElement('span');
-  cursor.className='cursor'; cursor.textContent='▌';
-  bodyEl.appendChild(cursor);
-
-  let buf='', titleDone=false, titleText='';
+Start with a title on the first line (just the title, no "Title:" prefix), then a blank line, then the story. Plain text only, no markdown formatting.`;
 
   try {
+    // Use non-streaming generateContent endpoint — most reliable across all Gemini models
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`,
       {
@@ -361,41 +321,40 @@ Start with a title on the first line (just the title, no "Title:" prefix), then 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.9, maxOutputTokens: 1200 }
+          generationConfig: { temperature: 0.9, maxOutputTokens: 1500 }
         })
       }
     );
 
-    if (!res.ok) {
-      const err = await res.json().catch(()=>({error:{message:res.statusText}}));
-      throw new Error(err.error?.message || res.statusText);
-    }
-
     const json = await res.json();
-    const fullResponse = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    buf = fullResponse;
-    if (buf.includes('\n')) {
-      const nl = buf.indexOf('\n');
-      titleText = buf.slice(0, nl).trim();
-      buf = buf.slice(nl).replace(/^\n+/, '');
-      titleDone = true;
-      document.getElementById('outTitle').textContent = titleText;
-      bodyEl.textContent = buf;
+
+    if (!res.ok) {
+      throw new Error(json.error?.message || res.statusText);
     }
 
-    cursor.remove();
-    fullText = titleText + '.\n\n' + buf;
+    // Extract full text from response
+    const raw = json.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+
+    if (!raw) throw new Error('Empty response from Gemini');
+
+    // Split title from body
+    const lines = raw.split('\n');
+    const titleText = lines[0].trim();
+    const bodyText = lines.slice(1).join('\n').replace(/^\n+/, '').trim();
+
+    document.getElementById('outTitle').textContent = titleText;
+    document.getElementById('outBody').textContent = bodyText;
+    fullText = titleText + '.\n\n' + bodyText;
     document.getElementById('audioBar').style.display='flex';
 
   } catch(err) {
-    cursor.remove();
+    document.getElementById('outTitle').textContent='';
     document.getElementById('errMsg').textContent = 'Error: ' + err.message;
   }
 
   document.getElementById('genBtn').disabled=false;
 });
 
-// ── Init ──
 renderTags();
 updateStatus();
 </script>
