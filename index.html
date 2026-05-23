@@ -7,168 +7,85 @@
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:        #0C0C10;
-  --bg-1:      #131318;
-  --bg-2:      #1A1A22;
-  --bg-3:      #22222E;
-  --border:    rgba(255,255,255,0.07);
-  --border-md: rgba(255,255,255,0.12);
-  --text:      #EEEAE2;
-  --text-2:    #8C8880;
-  --text-3:    #4A4844;
-  --accent:    #C9A84C;
-  --accent-lo: rgba(201,168,76,0.12);
-  --accent-md: rgba(201,168,76,0.25);
-  --blue:      #4A9EE8;
-  --green:     #4ACA7A;
-  --red:       #E05A52;
+  --bg:#0C0C10;--bg-1:#131318;--bg-2:#1A1A22;--bg-3:#22222E;
+  --border:rgba(255,255,255,0.07);--border-md:rgba(255,255,255,0.12);
+  --text:#EEEAE2;--text-2:#8C8880;--text-3:#4A4844;
+  --accent:#C9A84C;--accent-lo:rgba(201,168,76,0.12);--accent-md:rgba(201,168,76,0.25);
+  --blue:#4A9EE8;--green:#4ACA7A;--red:#E05A52;
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body {
-  height: 100%; font-family: 'Inter', sans-serif;
-  background: var(--bg); color: var(--text); overflow-x: hidden;
-}
-body { padding: 1.8rem 2rem 3rem; overflow-y: auto; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+body{padding:1.8rem 2rem 3rem;overflow-y:auto}
 
-.header { margin-bottom: 1.8rem; }
-.header h1 {
-  font-family: 'Lora', serif; font-size: 1.5rem; font-weight: 600;
-  color: var(--text); margin-bottom: 0.25rem;
-}
-.header p { font-size: 0.8rem; color: var(--text-2); }
+.header{margin-bottom:1.8rem}
+.header h1{font-family:'Lora',serif;font-size:1.5rem;font-weight:600;color:var(--text);margin-bottom:0.25rem}
+.header p{font-size:0.8rem;color:var(--text-2)}
 
-.panel {
-  background: var(--bg-1); border: 1px solid var(--border);
-  border-radius: 10px; padding: 1.2rem 1.4rem; margin-bottom: 1rem;
-}
-.panel-label {
-  font-size: 0.62rem; font-weight: 600; letter-spacing: 0.18em;
-  text-transform: uppercase; color: var(--text-3); margin-bottom: 0.9rem;
-}
+.panel{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:1.2rem 1.4rem;margin-bottom:1rem}
+.panel-label{font-size:0.62rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-3);margin-bottom:0.9rem}
 
-/* Language buttons */
-.lang-row { display: flex; gap: 0.6rem; }
-.lang-btn {
-  flex: 1; padding: 0.6rem 0.5rem;
-  background: var(--bg-2); border: 1px solid var(--border-md);
-  border-radius: 6px; color: var(--text-2);
-  font-family: 'Inter', sans-serif; font-size: 0.82rem; font-weight: 500;
-  cursor: pointer; transition: all 0.18s;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-}
-.lang-btn:hover { background: var(--bg-3); color: var(--text); }
-.lang-btn.active {
-  background: var(--accent-lo); border-color: rgba(201,168,76,0.35);
-  color: var(--accent);
-}
+.lang-row{display:flex;gap:0.6rem}
+.lang-btn{flex:1;padding:0.6rem 0.5rem;background:var(--bg-2);border:1px solid var(--border-md);border-radius:6px;color:var(--text-2);font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:500;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px}
+.lang-btn:hover{background:var(--bg-3);color:var(--text)}
+.lang-btn.active{background:var(--accent-lo);border-color:rgba(201,168,76,0.35);color:var(--accent)}
 
-/* Inputs row */
-.inputs-row { display: flex; gap: 1rem; flex-wrap: wrap; }
-.input-group { flex: 1; min-width: 100px; }
-.input-group.wide { flex: 2; }
-.input-group label {
-  display: block; font-size: 0.62rem; font-weight: 600;
-  letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--text-3); margin-bottom: 0.5rem;
-}
-input[type="number"], input[type="text"] {
-  width: 100%; padding: 0.55rem 0.9rem;
-  background: var(--bg-2); border: 1px solid var(--border-md);
-  border-radius: 6px; color: var(--text);
-  font-family: 'Inter', sans-serif; font-size: 0.85rem;
-  outline: none; transition: border-color 0.2s;
-}
-input:focus { border-color: var(--accent); }
-input::placeholder { color: var(--text-3); }
+.inputs-row{display:flex;gap:1rem;flex-wrap:wrap}
+.input-group{flex:1;min-width:100px}
+.input-group.wide{flex:2}
+.input-group label{display:block;font-size:0.62rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--text-3);margin-bottom:0.5rem}
+input[type="number"],input[type="text"]{width:100%;padding:0.55rem 0.9rem;background:var(--bg-2);border:1px solid var(--border-md);border-radius:6px;color:var(--text);font-family:'Inter',sans-serif;font-size:0.85rem;outline:none;transition:border-color 0.2s;min-height:44px}
+input:focus{border-color:var(--accent)}
+input::placeholder{color:var(--text-3)}
 
-.tag-add-row { display: flex; gap: 0.5rem; margin-bottom: 0.8rem; }
-.tag-add-row input { flex: 1; }
-.add-btn {
-  padding: 0.55rem 0.9rem;
-  background: var(--accent-lo); border: 1px solid rgba(201,168,76,0.3);
-  border-radius: 6px; color: var(--accent); font-size: 1rem;
-  cursor: pointer; transition: background 0.18s; flex-shrink: 0;
-}
-.add-btn:hover { background: var(--accent-md); }
+.tag-add-row{display:flex;gap:0.5rem;margin-bottom:0.8rem}
+.tag-add-row input{flex:1}
+.add-btn{padding:0.55rem 0.9rem;background:var(--accent-lo);border:1px solid rgba(201,168,76,0.3);border-radius:6px;color:var(--accent);font-size:1rem;cursor:pointer;transition:background 0.18s;flex-shrink:0;min-height:44px}
+.add-btn:hover{background:var(--accent-md)}
 
-.tags-wrap { display: flex; flex-wrap: wrap; gap: 0.45rem; min-height: 28px; }
-.tag {
-  display: flex; align-items: center; gap: 4px;
-  padding: 3px 9px 3px 10px; border-radius: 20px;
-  font-size: 0.78rem; font-weight: 500;
-  cursor: pointer; transition: all 0.18s;
-  border: 1px solid; user-select: none;
-}
-.tag.inactive { background: var(--bg-2); border-color: var(--border-md); color: var(--text-3); }
-.tag.active { background: rgba(74,158,232,0.12); border-color: rgba(74,158,232,0.35); color: var(--blue); }
-.tag .x { font-size: 0.68rem; opacity: 0.45; transition: opacity 0.15s; margin-left: 1px; }
-.tag:hover .x { opacity: 0.9; }
+.tags-wrap{display:flex;flex-wrap:wrap;gap:0.45rem;min-height:28px}
+.tag{display:flex;align-items:center;gap:4px;padding:5px 9px 5px 10px;border-radius:20px;font-size:0.78rem;font-weight:500;cursor:pointer;transition:all 0.18s;border:1px solid;user-select:none;min-height:32px}
+.tag.inactive{background:var(--bg-2);border-color:var(--border-md);color:var(--text-3)}
+.tag.active{background:rgba(74,158,232,0.12);border-color:rgba(74,158,232,0.35);color:var(--blue)}
+.tag .x{font-size:0.68rem;opacity:0.45;transition:opacity 0.15s;margin-left:1px}
+.tag:hover .x{opacity:0.9}
 
-.generate-btn {
-  width: 100%; padding: 0.85rem;
-  background: var(--accent); border: none; border-radius: 8px;
-  color: #0C0C10; font-family: 'Inter', sans-serif;
-  font-size: 0.9rem; font-weight: 600;
-  cursor: pointer; transition: all 0.18s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.generate-btn:hover { background: #DDB85A; transform: translateY(-1px); }
-.generate-btn:active { transform: translateY(0); }
-.generate-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.generate-btn{width:100%;padding:0.9rem;background:var(--accent);border:none;border-radius:8px;color:#0C0C10;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px}
+.generate-btn:hover{background:#DDB85A;transform:translateY(-1px)}
+.generate-btn:active{transform:translateY(0)}
+.generate-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none}
 
-/* Story output */
-.story-out {
-  background: var(--bg-1); border: 1px solid var(--border);
-  border-radius: 10px; padding: 1.5rem 1.6rem; margin-top: 1rem;
-  display: none;
-}
-.story-out.visible { display: block; }
-.story-out-title {
-  font-family: 'Lora', serif; font-size: 1.2rem; font-weight: 600;
-  color: var(--accent); text-align: center; margin-bottom: 1.2rem;
-}
-.story-out-body {
-  font-family: 'Lora', serif; font-size: 0.97rem;
-  line-height: 1.95; color: var(--text-2);
-  white-space: pre-wrap;
-}
-.cursor { display: inline-block; color: var(--accent); animation: blink 0.7s step-end infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.story-out{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:1.5rem 1.6rem;margin-top:1rem;display:none}
+.story-out.visible{display:block}
+.story-out-title{font-family:'Lora',serif;font-size:1.2rem;font-weight:600;color:var(--accent);text-align:center;margin-bottom:1.2rem}
+.story-out-body{font-family:'Lora',serif;font-size:0.97rem;line-height:1.95;color:var(--text-2);white-space:pre-wrap}
+.cursor{display:inline-block;color:var(--accent);animation:blink 0.7s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
-/* Audio */
-.audio-bar {
-  display: flex; align-items: center; gap: 12px;
-  margin-top: 1.4rem; padding-top: 1.2rem;
-  border-top: 1px solid var(--border);
-}
-.play-btn {
-  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
-  background: var(--accent-lo); border: 1px solid rgba(201,168,76,0.3);
-  color: var(--accent); font-size: 1rem; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background 0.18s;
-}
-.play-btn:hover { background: var(--accent-md); }
-.play-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.progress-wrap { flex: 1; }
-.track {
-  width: 100%; height: 3px; background: var(--bg-3);
-  border-radius: 2px; margin-bottom: 5px; overflow: hidden;
-}
-.fill { height: 100%; background: var(--accent); border-radius: 2px; width: 0%; transition: width 0.5s linear; }
-.times { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-3); }
+.audio-bar{display:flex;align-items:center;gap:12px;margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--border)}
+.play-btn{width:48px;height:48px;border-radius:50%;flex-shrink:0;background:var(--accent-lo);border:1px solid rgba(201,168,76,0.3);color:var(--accent);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.18s}
+.play-btn:hover{background:var(--accent-md)}
+.progress-wrap{flex:1}
+.track{width:100%;height:3px;background:var(--bg-3);border-radius:2px;margin-bottom:5px;overflow:hidden}
+.fill{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width 0.5s linear}
+.times{display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-3)}
 
-.tts-note {
-  font-size: 0.72rem; color: var(--text-3);
-  margin-top: 0.5rem; text-align: center;
+.status-bar{display:flex;align-items:center;gap:8px;padding:0.6rem 0.9rem;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;margin-bottom:1rem;font-size:0.78rem;color:var(--text-3)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--text-3);flex-shrink:0}
+.status-dot.ok{background:var(--green)}
+.status-dot.warn{background:#fbbf24}
+
+.tts-note{font-size:0.72rem;color:var(--text-3);margin-top:0.5rem;text-align:center}
+.error-msg{color:var(--red);font-size:0.82rem;text-align:center;padding:0.4rem;margin-top:0.5rem}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-md);border-radius:2px}
+input[type=number]::-webkit-inner-spin-button{opacity:1}
+
+@media(max-width:500px){
+  body{padding:1.2rem 1rem 2rem}
+  .lang-btn{font-size:0.75rem;padding:0.5rem 0.2rem}
 }
-
-.error-msg { color: var(--red); font-size: 0.82rem; text-align: center; padding: 0.4rem; margin-top: 0.5rem; }
-
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 2px; }
-input[type=number]::-webkit-inner-spin-button { opacity: 1; }
 </style>
 </head>
 <body>
@@ -176,6 +93,12 @@ input[type=number]::-webkit-inner-spin-button { opacity: 1; }
 <div class="header">
   <h1>🌙 Bedtime Stories</h1>
   <p>A magical story tailored for your child — text &amp; narration</p>
+</div>
+
+<!-- Key status bar -->
+<div class="status-bar" id="statusBar">
+  <div class="status-dot" id="statusDot"></div>
+  <span id="statusText">No API key — add your Gemini key in Dashboard Settings</span>
 </div>
 
 <div class="panel">
@@ -221,22 +144,39 @@ input[type=number]::-webkit-inner-spin-button { opacity: 1; }
 </div>
 
 <script>
-// ── State ──
 let lang = 'english';
 let tags = [{text:'pirate',active:true},{text:'treasure',active:true},{text:'dragon',active:false}];
 let fullText = '';
-let apiKey = '';
+let geminiKey = '';
 let isSpeaking = false;
 let audioEl = null;
 let progressTimer = null;
 
-// ── API key from parent dashboard ──
+// ── Receive key from parent dashboard ──
 window.addEventListener('message', e => {
-  if (e.data?.type === 'ANTHROPIC_KEY') apiKey = e.data.key;
-  if (e.data?.type === 'GEMINI_KEY') {} // ignore gemini
+  if (e.data?.type === 'GEMINI_KEY') { geminiKey = e.data.key; updateStatus(); }
+  if (e.data?.type === 'ANTHROPIC_KEY') {} // not used
 });
 
-// ── Lang ──
+// ── Also check localStorage directly (when opened standalone) ──
+function getKey() {
+  return geminiKey || localStorage.getItem('philou_gemini_key') || '';
+}
+
+function updateStatus() {
+  const key = getKey();
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  if (key) {
+    dot.className = 'status-dot ok';
+    txt.textContent = 'Gemini connected — free story generation ready';
+  } else {
+    dot.className = 'status-dot warn';
+    txt.textContent = 'No API key — add your Gemini key in Dashboard Settings';
+  }
+}
+
+// ── Language ──
 document.querySelectorAll('.lang-btn').forEach(b => {
   b.addEventListener('click', () => {
     document.querySelectorAll('.lang-btn').forEach(x => x.classList.remove('active'));
@@ -252,7 +192,7 @@ function renderTags() {
   tags.forEach((t, i) => {
     const el = document.createElement('div');
     el.className = 'tag ' + (t.active ? 'active' : 'inactive');
-    el.innerHTML = `<span>${t.text}</span><span class="x" data-i="${i}">✕</span>`;
+    el.innerHTML = `<span>${t.text}</span><span class="x">✕</span>`;
     el.querySelector('span:first-child').onclick = () => { tags[i].active = !tags[i].active; renderTags(); };
     el.querySelector('.x').onclick = e => { e.stopPropagation(); tags.splice(i,1); renderTags(); };
     w.appendChild(el);
@@ -271,17 +211,16 @@ function addTag() {
 document.getElementById('addBtn').onclick = addTag;
 document.getElementById('tagInput').addEventListener('keydown', e => { if(e.key==='Enter') addTag(); });
 
-// ── Helpers ──
+// ── Time format ──
 function fmt(s) {
-  const m = Math.floor(s/60), sec = Math.floor(s%60);
-  return `${m}:${sec.toString().padStart(2,'0')}`;
+  return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`;
 }
 
-// ── TTS using Google Translate (free, great multilingual voices) ──
+// ── TTS via Google Translate (free, great FR + RU voices) ──
 const LANG_CODES = { english:'en', french:'fr', russian:'ru' };
 
 function stopAudio() {
-  if (audioEl) { audioEl.pause(); audioEl.src = ''; audioEl = null; }
+  if (audioEl) { audioEl.pause(); audioEl.src=''; audioEl=null; }
   clearInterval(progressTimer);
   isSpeaking = false;
   document.getElementById('playBtn').textContent = '▶';
@@ -289,25 +228,12 @@ function stopAudio() {
   document.getElementById('tElapsed').textContent = '0:00';
 }
 
-function playAudio(text) {
-  stopAudio();
-  const code = LANG_CODES[lang];
-  // Split text into chunks ≤200 chars at sentence boundaries
-  const chunks = splitChunks(text, 195);
-  playChunks(chunks, 0);
-}
-
 function splitChunks(text, maxLen) {
   const sentences = text.match(/[^.!?…\n]+[.!?…\n]*/g) || [text];
-  const chunks = [];
-  let current = '';
+  const chunks = []; let current = '';
   for (const s of sentences) {
-    if ((current + s).length > maxLen && current) {
-      chunks.push(current.trim());
-      current = s;
-    } else {
-      current += s;
-    }
+    if ((current+s).length > maxLen && current) { chunks.push(current.trim()); current = s; }
+    else current += s;
   }
   if (current.trim()) chunks.push(current.trim());
   return chunks;
@@ -324,13 +250,10 @@ function playChunks(chunks, idx) {
   const code = LANG_CODES[lang];
   const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunks[idx])}&tl=${code}&client=tw-ob`;
   const audio = new Audio(url);
-  audio.crossOrigin = 'anonymous';
   audioEl = audio;
 
   if (idx === 0) {
-    // estimate total duration from word count
-    const totalWords = fullText.split(/\s+/).length;
-    const estSecs = (totalWords / 130) * 60;
+    const estSecs = (fullText.split(/\s+/).length / 130) * 60;
     document.getElementById('tDur').textContent = fmt(estSecs);
     const start = Date.now();
     progressTimer = setInterval(() => {
@@ -344,80 +267,74 @@ function playChunks(chunks, idx) {
 
   audio.onended = () => playChunks(chunks, idx+1);
   audio.onerror = () => {
-    // fallback to browser TTS if Google TTS fails
-    document.getElementById('ttsNote').textContent = '⚠ Using browser voice (install better system voices for French/Russian)';
-    clearInterval(progressTimer);
-    isSpeaking = false;
-    document.getElementById('playBtn').textContent = '▶';
-    fallbackBrowserTTS(fullText);
+    document.getElementById('ttsNote').textContent = '⚠ Using browser voice — install system voices for better French/Russian';
+    clearInterval(progressTimer); isSpeaking=false;
+    document.getElementById('playBtn').textContent='▶';
+    fallbackTTS(fullText);
   };
   audio.play().catch(() => {
-    document.getElementById('ttsNote').textContent = '⚠ Autoplay blocked — tap Play again';
-    isSpeaking = false;
-    document.getElementById('playBtn').textContent = '▶';
+    document.getElementById('ttsNote').textContent = '⚠ Tap Play to start narration';
+    isSpeaking=false; document.getElementById('playBtn').textContent='▶';
   });
 }
 
-function fallbackBrowserTTS(text) {
-  const synth = window.speechSynthesis;
-  synth.cancel();
+function fallbackTTS(text) {
+  const synth = window.speechSynthesis; synth.cancel();
   const utter = new SpeechSynthesisUtterance(text);
   const codes = { english:'en-US', french:'fr-FR', russian:'ru-RU' };
-  utter.lang = codes[lang];
-  utter.rate = 0.85;
+  utter.lang = codes[lang]; utter.rate = 0.85;
   const voices = synth.getVoices();
   const prefix = codes[lang].split('-')[0];
   const v = voices.find(v=>v.lang===codes[lang]) || voices.find(v=>v.lang.startsWith(prefix));
   if (v) utter.voice = v;
   synth.speak(utter);
-  isSpeaking = true;
-  document.getElementById('playBtn').textContent = '⏸';
-  const estSecs = (text.split(/\s+/).length/130)*60;
-  document.getElementById('tDur').textContent = fmt(estSecs);
-  const start = Date.now();
-  progressTimer = setInterval(()=>{
+  isSpeaking=true; document.getElementById('playBtn').textContent='⏸';
+  const estSecs=(text.split(/\s+/).length/130)*60;
+  document.getElementById('tDur').textContent=fmt(estSecs);
+  const start=Date.now();
+  progressTimer=setInterval(()=>{
     const e=(Date.now()-start)/1000;
     document.getElementById('tElapsed').textContent=fmt(e);
     document.getElementById('fill').style.width=Math.min((e/estSecs)*100,100)+'%';
   },500);
-  utter.onend = () => { clearInterval(progressTimer); isSpeaking=false; document.getElementById('playBtn').textContent='▶'; };
+  utter.onend=()=>{ clearInterval(progressTimer); isSpeaking=false; document.getElementById('playBtn').textContent='▶'; };
 }
 
 document.getElementById('playBtn').addEventListener('click', () => {
   if (!fullText) return;
   if (isSpeaking) { stopAudio(); window.speechSynthesis?.cancel(); }
-  else { document.getElementById('ttsNote').textContent=''; playAudio(fullText); }
+  else { document.getElementById('ttsNote').textContent=''; playChunks(splitChunks(fullText,195), 0); }
 });
 
-// ── Generate ──
+// ── Generate with Gemini ──
 document.getElementById('genBtn').addEventListener('click', async () => {
   stopAudio(); window.speechSynthesis?.cancel();
 
-  // Try to get API key from localStorage (set by dashboard settings)
-  if (!apiKey) apiKey = localStorage.getItem('philou_anthropic_key') || '';
-  if (!apiKey) {
-    document.getElementById('errMsg').textContent = 'No Anthropic API key — add it in Settings.';
+  const key = getKey();
+  if (!key) {
+    document.getElementById('errMsg').textContent = 'No Gemini API key — add it in Dashboard Settings (gear icon).';
     document.getElementById('storyOut').classList.add('visible');
     return;
   }
 
-  document.getElementById('errMsg').textContent = '';
-  document.getElementById('ttsNote').textContent = '';
+  document.getElementById('errMsg').textContent='';
+  document.getElementById('ttsNote').textContent='';
   document.getElementById('storyOut').classList.add('visible');
-  document.getElementById('outTitle').textContent = '';
-  document.getElementById('outBody').textContent = '';
-  document.getElementById('audioBar').style.display = 'none';
-  document.getElementById('genBtn').disabled = true;
-  fullText = '';
+  document.getElementById('outTitle').textContent='';
+  document.getElementById('outBody').textContent='';
+  document.getElementById('audioBar').style.display='none';
+  document.getElementById('genBtn').disabled=true;
+  fullText='';
 
-  const age = parseInt(document.getElementById('ageInput').value) || 5;
+  const age = parseInt(document.getElementById('ageInput').value)||5;
   const active = tags.filter(t=>t.active).map(t=>t.text);
   const themeStr = active.length ? `Themes/elements to include: ${active.join(', ')}.` : '';
   const langMap = {
     english: 'Write the story entirely in English.',
-    french: 'Écris l\'histoire entièrement en français.',
+    french: "Écris l'histoire entièrement en français.",
     russian: 'Напиши историю полностью на русском языке.',
   };
+
   const prompt = `You are a warm, gentle bedtime story narrator. Write a complete bedtime story for a ${age}-year-old child. The story should:
 - Be approximately 500-600 words (about 5 minutes when read aloud slowly)
 - Have a simple, calming narrative arc with a clear positive message
@@ -429,54 +346,57 @@ document.getElementById('genBtn').addEventListener('click', async () => {
 
 Start with a title on the first line (just the title, no "Title:" prefix), then a blank line, then the story. Plain text only, no markdown.`;
 
-  let buf = '', titleDone = false, titleText = '';
+  const bodyEl = document.getElementById('outBody');
   const cursor = document.createElement('span');
-  cursor.className = 'cursor'; cursor.textContent = '▌';
+  cursor.className='cursor'; cursor.textContent='▌';
+  bodyEl.appendChild(cursor);
+
+  let buf='', titleDone=false, titleText='';
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000, stream: true,
-        messages: [{ role:'user', content: prompt }]
-      })
-    });
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.9, maxOutputTokens: 1200 }
+        })
+      }
+    );
 
-    if (!res.ok) throw new Error('API error ' + res.status);
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({error:{message:res.statusText}}));
+      throw new Error(err.error?.message || res.statusText);
+    }
 
     const reader = res.body.getReader();
     const dec = new TextDecoder();
-    const bodyEl = document.getElementById('outBody');
-    bodyEl.appendChild(cursor);
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      for (const line of dec.decode(value).split('\n')) {
+      const lines = dec.decode(value).split('\n');
+      for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
-        const d = line.slice(6); if (d==='[DONE]') continue;
+        const d = line.slice(6).trim();
+        if (!d || d==='[DONE]') continue;
         try {
-          const p = JSON.parse(d);
-          if (p.type==='content_block_delta' && p.delta?.text) {
-            buf += p.delta.text;
-            if (!titleDone && buf.includes('\n')) {
-              const nl = buf.indexOf('\n');
-              titleText = buf.slice(0,nl).trim();
-              buf = buf.slice(nl).replace(/^\n+/,'');
-              titleDone = true;
-              document.getElementById('outTitle').textContent = titleText;
-            }
-            if (titleDone) {
-              bodyEl.textContent = buf;
-              bodyEl.appendChild(cursor);
-            }
+          const parsed = JSON.parse(d);
+          const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (!text) continue;
+          buf += text;
+          if (!titleDone && buf.includes('\n')) {
+            const nl = buf.indexOf('\n');
+            titleText = buf.slice(0,nl).trim();
+            buf = buf.slice(nl).replace(/^\n+/,'');
+            titleDone = true;
+            document.getElementById('outTitle').textContent = titleText;
+          }
+          if (titleDone) {
+            bodyEl.textContent = buf;
+            bodyEl.appendChild(cursor);
           }
         } catch(e){}
       }
@@ -484,17 +404,19 @@ Start with a title on the first line (just the title, no "Title:" prefix), then 
 
     cursor.remove();
     fullText = titleText + '.\n\n' + buf;
-    document.getElementById('audioBar').style.display = 'flex';
+    document.getElementById('audioBar').style.display='flex';
 
   } catch(err) {
     cursor.remove();
     document.getElementById('errMsg').textContent = 'Error: ' + err.message;
   }
 
-  document.getElementById('genBtn').disabled = false;
+  document.getElementById('genBtn').disabled=false;
 });
 
+// ── Init ──
 renderTags();
+updateStatus();
 </script>
 </body>
 </html>
