@@ -321,7 +321,7 @@ Start with a title on the first line (just the title, no "Title:" prefix), then 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.9, maxOutputTokens: 1500 }
+          generationConfig: { temperature: 0.9, maxOutputTokens: 4000 }
         })
       }
     );
