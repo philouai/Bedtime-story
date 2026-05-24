@@ -60,9 +60,10 @@ input::placeholder{color:var(--text-3)}
 .status-dot{width:7px;height:7px;border-radius:50%;background:var(--text-3);flex-shrink:0}
 .status-dot.ok{background:var(--green)}
 .status-dot.warn{background:#fbbf24}
-.voice-badge{margin-left:auto;font-size:0.68rem;color:var(--text-3);background:var(--bg-3);padding:2px 7px;border-radius:4px}
 .tts-note{font-size:0.72rem;color:var(--text-3);margin-top:0.5rem;text-align:center}
 .error-msg{color:var(--red);font-size:0.82rem;text-align:center;padding:0.4rem;margin-top:0.5rem}
+.wake-btn{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--bg-2);border:1px solid var(--border-md);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.18s;opacity:0.5}
+.wake-btn.active{background:rgba(201,168,76,0.15);border-color:rgba(201,168,76,0.4);opacity:1}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border-md);border-radius:2px}
@@ -78,8 +79,7 @@ input::placeholder{color:var(--text-3)}
 
 <div class="status-bar" id="statusBar">
   <div class="status-dot" id="statusDot"></div>
-  <span id="statusText">Checking API keys...</span>
-  <span class="voice-badge" id="voiceBadge"></span>
+  <span id="statusText">Checking API key...</span>
 </div>
 
 <div class="panel">
@@ -119,6 +119,7 @@ input::placeholder{color:var(--text-3)}
       <div class="track"><div class="fill" id="fill"></div></div>
       <div class="times"><span id="tElapsed">0:00</span><span id="tDur">--:--</span></div>
     </div>
+    <button class="wake-btn" id="wakeBtn" title="Keep screen awake">☀️</button>
   </div>
   <div class="tts-note" id="ttsNote"></div>
   <div class="error-msg" id="errMsg"></div>
@@ -129,56 +130,31 @@ let lang = 'english';
 let tags = [{text:'pirate',active:true},{text:'treasure',active:true},{text:'dragon',active:false}];
 let fullText = '';
 let geminiKey = '';
-let elevenKey = '';
 let isSpeaking = false;
 let currentAudio = null;
 let progressTimer = null;
-let audioChunks = [];
-let currentChunkIdx = 0;
 
-// ── Voice IDs per language ──
-// ElevenLabs free premade voices — eleven_multilingual_v2 handles all languages
-const VOICES = {
-  english: ['21m00Tcm4TlvDq8ikWAM','ErXwobaYiN019PkySvjV','VR6AewLTigWG4xSOukaG'],
-  french:  ['21m00Tcm4TlvDq8ikWAM','ErXwobaYiN019PkySvjV','VR6AewLTigWG4xSOukaG'],
-  russian: ['21m00Tcm4TlvDq8ikWAM','ErXwobaYiN019PkySvjV','VR6AewLTigWG4xSOukaG'],
+// Warm, calm, slow voices via FreeTTS (Azure Neural) — no API key needed
+const TTS_VOICES = {
+  english: 'en-GB-OliviaNeutral',   // warm British female, great for storytelling
+  french:  'fr-FR-DeniseNeural',     // warm natural French female
+  russian: 'ru-RU-SvetlanaNeural',   // calm warm Russian female
 };
 
-function pickVoice() {
-  const list = VOICES[lang];
-  return list[Math.floor(Math.random() * list.length)];
-}
-
-// ── Receive keys from dashboard ──
 window.addEventListener('message', e => {
-  if (e.data?.type === 'GEMINI_KEY')  { geminiKey  = e.data.key; updateStatus(); }
-  if (e.data?.type === 'ELEVEN_KEY')  { elevenKey  = e.data.key; updateStatus(); }
+  if (e.data?.type === 'GEMINI_KEY') { geminiKey = e.data.key; updateStatus(); }
 });
 
-function getGeminiKey()  { return geminiKey  || localStorage.getItem('philou_gemini_key')  || ''; }
-function getElevenKey()  { return elevenKey  || localStorage.getItem('philou_eleven_key')  || ''; }
+function getGeminiKey() { return geminiKey || localStorage.getItem('philou_gemini_key') || ''; }
 
 function updateStatus() {
-  const gk = getGeminiKey(); const ek = getElevenKey();
+  const k = getGeminiKey();
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
-  const badge = document.getElementById('voiceBadge');
-  if (gk && ek) {
-    dot.className='status-dot ok';
-    txt.textContent='Gemini + ElevenLabs connected';
-    badge.textContent='🎙 AI voice';
-  } else if (gk) {
-    dot.className='status-dot warn';
-    txt.textContent='Gemini connected — add ElevenLabs key for voice';
-    badge.textContent='🔇 No voice key';
-  } else {
-    dot.className='status-dot warn';
-    txt.textContent='No API keys — add them in Dashboard Settings';
-    badge.textContent='';
-  }
+  if (k) { dot.className='status-dot ok'; txt.textContent='Ready — voice by FreeTTS (free, no key needed)'; }
+  else { dot.className='status-dot warn'; txt.textContent='No Gemini key — add it in Dashboard Settings'; }
 }
 
-// ── Language ──
 document.querySelectorAll('.lang-btn').forEach(b => {
   b.addEventListener('click', () => {
     document.querySelectorAll('.lang-btn').forEach(x => x.classList.remove('active'));
@@ -186,7 +162,6 @@ document.querySelectorAll('.lang-btn').forEach(b => {
   });
 });
 
-// ── Tags ──
 function renderTags() {
   const w = document.getElementById('tagsWrap');
   w.innerHTML = '';
@@ -211,13 +186,11 @@ document.getElementById('tagInput').addEventListener('keydown', e => { if(e.key=
 
 function fmt(s) { return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`; }
 
-// ── Audio playback (fully reset on each story) ──
+// ── Reset audio fully on new story ──
 function resetAudio() {
   if (currentAudio) { currentAudio.pause(); currentAudio.src=''; currentAudio=null; }
   clearInterval(progressTimer);
   isSpeaking = false;
-  audioChunks = [];
-  currentChunkIdx = 0;
   document.getElementById('playBtn').textContent = '▶';
   document.getElementById('fill').style.width = '0%';
   document.getElementById('tElapsed').textContent = '0:00';
@@ -225,7 +198,7 @@ function resetAudio() {
 }
 
 function startProgress() {
-  const estSecs = (fullText.split(/\s+/).length / 130) * 60;
+  const estSecs = (fullText.split(/\s+/).length / 110) * 60; // slower rate
   document.getElementById('tDur').textContent = fmt(estSecs);
   const start = Date.now();
   clearInterval(progressTimer);
@@ -237,37 +210,35 @@ function startProgress() {
   }, 500);
 }
 
-// ── ElevenLabs TTS ──
-async function speakWithElevenLabs(text) {
-  const key = getElevenKey();
-  if (!key) { fallbackTTS(text); return; }
-
-  const voiceId = pickVoice();
+// ── FreeTTS playback ──
+async function speakWithFreeTTS(text) {
+  const voice = TTS_VOICES[lang];
   document.getElementById('ttsNote').textContent = '⏳ Generating voice...';
   document.getElementById('playBtn').textContent = '⏳';
 
   try {
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    // Step 1: request TTS
+    const res = await fetch('https://freetts.org/api/tts', {
       method: 'POST',
-      headers: {
-        'xi-api-key': key,
-        'Content-Type': 'application/json',
-        'Accept': 'audio/mpeg'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         text: text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: { stability: 0.4, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true }
+        voice: voice,
+        rate: '-10%',   // slightly slower — calm bedtime pace
+        pitch: '-2Hz'   // slightly lower — warm, soothing tone
       })
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(()=>({}));
-      throw new Error(err.detail?.message || err.detail || res.statusText);
-    }
+    if (!res.ok) throw new Error('FreeTTS error ' + res.status);
+    const { file_id } = await res.json();
+    if (!file_id) throw new Error('No file_id returned');
 
-    const blob = await res.blob();
+    // Step 2: fetch the MP3
+    const audioRes = await fetch(`https://freetts.org/api/audio/${file_id}`);
+    if (!audioRes.ok) throw new Error('Audio fetch error ' + audioRes.status);
+    const blob = await audioRes.blob();
     const url = URL.createObjectURL(blob);
+
     const audio = new Audio(url);
     currentAudio = audio;
     document.getElementById('ttsNote').textContent = '';
@@ -290,61 +261,36 @@ async function speakWithElevenLabs(text) {
     };
 
   } catch(err) {
-    document.getElementById('ttsNote').textContent = '⚠ ElevenLabs error: ' + err.message + ' — using browser voice';
+    document.getElementById('ttsNote').textContent = '⚠ Voice error: ' + err.message;
     document.getElementById('playBtn').textContent = '▶';
-    fallbackTTS(text);
+    isSpeaking = false;
   }
-}
-
-// ── Fallback browser TTS ──
-function fallbackTTS(text) {
-  const synth = window.speechSynthesis; synth.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  const codes = { english:'en-US', french:'fr-FR', russian:'ru-RU' };
-  utter.lang = codes[lang]; utter.rate = 0.85;
-  const voices = synth.getVoices();
-  const prefix = codes[lang].split('-')[0];
-  const v = voices.find(v=>v.lang===codes[lang]) || voices.find(v=>v.lang.startsWith(prefix));
-  if (v) utter.voice = v;
-  synth.speak(utter);
-  isSpeaking = true;
-  document.getElementById('playBtn').textContent = '⏸';
-  startProgress();
-  utter.onend = () => {
-    clearInterval(progressTimer); isSpeaking=false;
-    document.getElementById('playBtn').textContent='▶';
-  };
 }
 
 // ── Play button ──
 document.getElementById('playBtn').addEventListener('click', () => {
   if (!fullText) return;
   if (isSpeaking) {
-    // Pause
-    if (currentAudio) currentAudio.pause();
-    window.speechSynthesis?.pause();
+    if (currentAudio) { currentAudio.pause(); }
     clearInterval(progressTimer);
     isSpeaking = false;
     document.getElementById('playBtn').textContent = '▶';
   } else {
-    // Resume or start fresh
-    if (currentAudio && currentAudio.paused) {
+    if (currentAudio && currentAudio.paused && currentAudio.src) {
       currentAudio.play();
       isSpeaking = true;
       document.getElementById('playBtn').textContent = '⏸';
       startProgress();
     } else {
       document.getElementById('ttsNote').textContent = '';
-      speakWithElevenLabs(fullText);
+      speakWithFreeTTSWrapped(fullText);
     }
   }
 });
 
 // ── Generate with Gemini ──
 document.getElementById('genBtn').addEventListener('click', async () => {
-  // Fully reset audio state for new story
   resetAudio();
-  window.speechSynthesis?.cancel();
 
   const gk = getGeminiKey();
   if (!gk) {
@@ -377,7 +323,7 @@ Rules:
 - Then the full story body: 5-6 paragraphs, approximately 400-500 words
 - Calm, gentle tone — helps child fall asleep
 - Simple positive message
-- End peacefully
+- End peacefully and sleepily
 - ${themeStr}
 - ${langMap[lang]}
 - Plain text only, no markdown, no asterisks, no bullet points`;
@@ -402,13 +348,15 @@ Rules:
     if (!raw) throw new Error('Empty response from Gemini');
 
     const firstNL = raw.indexOf('\n');
-    const titleText = firstNL > -1 ? raw.slice(0, firstNL).trim() : raw;
+    const titleText = firstNL > -1 ? raw.slice(0,firstNL).trim() : raw;
     const bodyText  = firstNL > -1 ? raw.slice(firstNL).replace(/^\n+/,'').trim() : '';
 
     document.getElementById('outTitle').textContent = titleText;
     document.getElementById('outBody').textContent = bodyText;
     fullText = titleText + '.\n\n' + bodyText;
     document.getElementById('audioBar').style.display='flex';
+    // auto request wake lock when story is ready
+    requestWakeLock();
 
   } catch(err) {
     document.getElementById('outTitle').textContent='';
@@ -416,6 +364,52 @@ Rules:
   }
 
   document.getElementById('genBtn').disabled=false;
+});
+
+// ── Wake Lock (keep screen on while story plays) ──
+let wakeLock = null;
+
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) {
+    document.getElementById('ttsNote').textContent = '⚠ Wake Lock not supported on this browser';
+    return;
+  }
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    document.getElementById('wakeBtn').classList.add('active');
+    document.getElementById('wakeBtn').title = 'Screen will stay on ✓';
+    wakeLock.addEventListener('release', () => {
+      document.getElementById('wakeBtn').classList.remove('active');
+      document.getElementById('wakeBtn').title = 'Keep screen awake';
+      wakeLock = null;
+    });
+  } catch(err) {
+    document.getElementById('ttsNote').textContent = '⚠ Could not keep screen awake: ' + err.message;
+  }
+}
+
+async function releaseWakeLock() {
+  if (wakeLock) { await wakeLock.release(); wakeLock = null; }
+  document.getElementById('wakeBtn').classList.remove('active');
+}
+
+document.getElementById('wakeBtn').addEventListener('click', async () => {
+  if (wakeLock) { await releaseWakeLock(); }
+  else { await requestWakeLock(); }
+});
+
+// Auto request wake lock when story starts playing, release when done
+const origSpeakWithFreeTTS = speakWithFreeTTS;
+async function speakWithFreeTTSWrapped(text) {
+  await requestWakeLock();
+  await origSpeakWithFreeTTS(text);
+}
+
+// Re-acquire wake lock if page becomes visible again (e.g. user unlocks phone)
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && isSpeaking && !wakeLock) {
+    await requestWakeLock();
+  }
 });
 
 renderTags();
