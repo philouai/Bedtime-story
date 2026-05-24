@@ -62,6 +62,7 @@ input::placeholder{color:var(--text-3)}
 .status-dot.warn{background:#fbbf24}
 .tts-note{font-size:0.72rem;color:var(--text-3);margin-top:0.5rem;text-align:center}
 .error-msg{color:var(--red);font-size:0.82rem;text-align:center;padding:0.4rem;margin-top:0.5rem}
+.debug-box{background:var(--bg-2);border:1px solid var(--border-md);border-radius:6px;padding:0.8rem;margin-top:0.8rem;font-size:0.72rem;color:var(--text-3);font-family:monospace;white-space:pre-wrap;display:none}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border-md);border-radius:2px}
@@ -120,6 +121,7 @@ input::placeholder{color:var(--text-3)}
   </div>
   <div class="tts-note" id="ttsNote"></div>
   <div class="error-msg" id="errMsg"></div>
+  <div class="debug-box" id="debugBox"></div>
 </div>
 
 <script>
@@ -131,7 +133,6 @@ let isSpeaking = false;
 let audioEl = null;
 let progressTimer = null;
 
-// Receive key from parent dashboard
 window.addEventListener('message', e => {
   if (e.data?.type === 'GEMINI_KEY') { geminiKey = e.data.key; updateStatus(); }
 });
@@ -144,20 +145,17 @@ function updateStatus() {
   const key = getKey();
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
-  if (key) { dot.className='status-dot ok'; txt.textContent='Gemini connected — ready to generate'; }
+  if (key) { dot.className='status-dot ok'; txt.textContent='Gemini connected — ready'; }
   else { dot.className='status-dot warn'; txt.textContent='No API key — add Gemini key in Dashboard Settings'; }
 }
 
-// Language
 document.querySelectorAll('.lang-btn').forEach(b => {
   b.addEventListener('click', () => {
     document.querySelectorAll('.lang-btn').forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-    lang = b.dataset.lang;
+    b.classList.add('active'); lang = b.dataset.lang;
   });
 });
 
-// Tags
 function renderTags() {
   const w = document.getElementById('tagsWrap');
   w.innerHTML = '';
@@ -174,8 +172,7 @@ function renderTags() {
 function addTag() {
   const v = document.getElementById('tagInput').value.trim().toLowerCase();
   if (!v || tags.find(t => t.text === v)) return;
-  tags.push({text:v, active:true});
-  renderTags();
+  tags.push({text:v, active:true}); renderTags();
   document.getElementById('tagInput').value = '';
   document.getElementById('tagInput').focus();
 }
@@ -184,24 +181,21 @@ document.getElementById('tagInput').addEventListener('keydown', e => { if(e.key=
 
 function fmt(s) { return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`; }
 
-// TTS
 const LANG_CODES = { english:'en', french:'fr', russian:'ru' };
 
 function stopAudio() {
   if (audioEl) { audioEl.pause(); audioEl.src=''; audioEl=null; }
-  clearInterval(progressTimer);
-  isSpeaking = false;
-  document.getElementById('playBtn').textContent = '▶';
-  document.getElementById('fill').style.width = '0%';
-  document.getElementById('tElapsed').textContent = '0:00';
+  clearInterval(progressTimer); isSpeaking=false;
+  document.getElementById('playBtn').textContent='▶';
+  document.getElementById('fill').style.width='0%';
+  document.getElementById('tElapsed').textContent='0:00';
 }
 
 function splitChunks(text, maxLen) {
   const sentences = text.match(/[^.!?…\n]+[.!?…\n]*/g) || [text];
-  const chunks = []; let cur = '';
+  const chunks=[]; let cur='';
   for (const s of sentences) {
-    if ((cur+s).length > maxLen && cur) { chunks.push(cur.trim()); cur=s; }
-    else cur += s;
+    if ((cur+s).length > maxLen && cur) { chunks.push(cur.trim()); cur=s; } else cur+=s;
   }
   if (cur.trim()) chunks.push(cur.trim());
   return chunks;
@@ -209,51 +203,36 @@ function splitChunks(text, maxLen) {
 
 function playChunks(chunks, idx) {
   if (idx >= chunks.length) {
-    isSpeaking=false;
-    document.getElementById('playBtn').textContent='▶';
-    document.getElementById('fill').style.width='100%';
-    clearInterval(progressTimer);
-    return;
+    isSpeaking=false; document.getElementById('playBtn').textContent='▶';
+    document.getElementById('fill').style.width='100%'; clearInterval(progressTimer); return;
   }
   const code = LANG_CODES[lang];
   const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunks[idx])}&tl=${code}&client=tw-ob`;
-  const audio = new Audio(url);
-  audioEl = audio;
-  if (idx === 0) {
-    const estSecs = (fullText.split(/\s+/).length / 130) * 60;
-    document.getElementById('tDur').textContent = fmt(estSecs);
-    const start = Date.now();
-    progressTimer = setInterval(() => {
-      const e = (Date.now()-start)/1000;
-      document.getElementById('tElapsed').textContent = fmt(e);
-      document.getElementById('fill').style.width = Math.min((e/estSecs)*100,100)+'%';
-    }, 500);
-    isSpeaking=true;
-    document.getElementById('playBtn').textContent='⏸';
+  const audio = new Audio(url); audioEl=audio;
+  if (idx===0) {
+    const estSecs=(fullText.split(/\s+/).length/130)*60;
+    document.getElementById('tDur').textContent=fmt(estSecs);
+    const start=Date.now();
+    progressTimer=setInterval(()=>{
+      const e=(Date.now()-start)/1000;
+      document.getElementById('tElapsed').textContent=fmt(e);
+      document.getElementById('fill').style.width=Math.min((e/estSecs)*100,100)+'%';
+    },500);
+    isSpeaking=true; document.getElementById('playBtn').textContent='⏸';
   }
-  audio.onended = () => playChunks(chunks, idx+1);
-  audio.onerror = () => {
-    document.getElementById('ttsNote').textContent = '⚠ Using browser voice — better FR/RU voices available via system settings';
-    clearInterval(progressTimer); isSpeaking=false;
-    document.getElementById('playBtn').textContent='▶';
-    fallbackTTS(fullText);
-  };
-  audio.play().catch(() => {
-    document.getElementById('ttsNote').textContent = '⚠ Tap Play to start narration';
-    isSpeaking=false; document.getElementById('playBtn').textContent='▶';
-  });
+  audio.onended=()=>playChunks(chunks,idx+1);
+  audio.onerror=()=>{ clearInterval(progressTimer); isSpeaking=false; document.getElementById('playBtn').textContent='▶'; fallbackTTS(fullText); };
+  audio.play().catch(()=>{ isSpeaking=false; document.getElementById('playBtn').textContent='▶'; document.getElementById('ttsNote').textContent='⚠ Tap Play to start'; });
 }
 
 function fallbackTTS(text) {
-  const synth = window.speechSynthesis; synth.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  const codes = { english:'en-US', french:'fr-FR', russian:'ru-RU' };
-  utter.lang = codes[lang]; utter.rate = 0.85;
-  const voices = synth.getVoices();
-  const prefix = codes[lang].split('-')[0];
-  const v = voices.find(v=>v.lang===codes[lang]) || voices.find(v=>v.lang.startsWith(prefix));
-  if (v) utter.voice = v;
-  synth.speak(utter);
+  const synth=window.speechSynthesis; synth.cancel();
+  const utter=new SpeechSynthesisUtterance(text);
+  const codes={english:'en-US',french:'fr-FR',russian:'ru-RU'};
+  utter.lang=codes[lang]; utter.rate=0.85;
+  const voices=synth.getVoices(); const prefix=codes[lang].split('-')[0];
+  const v=voices.find(v=>v.lang===codes[lang])||voices.find(v=>v.lang.startsWith(prefix));
+  if(v) utter.voice=v; synth.speak(utter);
   isSpeaking=true; document.getElementById('playBtn').textContent='⏸';
   const estSecs=(text.split(/\s+/).length/130)*60;
   document.getElementById('tDur').textContent=fmt(estSecs);
@@ -266,25 +245,23 @@ function fallbackTTS(text) {
   utter.onend=()=>{ clearInterval(progressTimer); isSpeaking=false; document.getElementById('playBtn').textContent='▶'; };
 }
 
-document.getElementById('playBtn').addEventListener('click', () => {
+document.getElementById('playBtn').addEventListener('click', ()=>{
   if (!fullText) return;
   if (isSpeaking) { stopAudio(); window.speechSynthesis?.cancel(); }
-  else { document.getElementById('ttsNote').textContent=''; playChunks(splitChunks(fullText,195), 0); }
+  else { document.getElementById('ttsNote').textContent=''; playChunks(splitChunks(fullText,195),0); }
 });
 
-// Generate with Gemini — non-streaming (most compatible)
 document.getElementById('genBtn').addEventListener('click', async () => {
   stopAudio(); window.speechSynthesis?.cancel();
-
   const key = getKey();
   if (!key) {
-    document.getElementById('errMsg').textContent = 'No Gemini API key — add it in Dashboard Settings (gear icon).';
-    document.getElementById('storyOut').classList.add('visible');
-    return;
+    document.getElementById('errMsg').textContent='No Gemini API key — add it in Dashboard Settings.';
+    document.getElementById('storyOut').classList.add('visible'); return;
   }
 
   document.getElementById('errMsg').textContent='';
   document.getElementById('ttsNote').textContent='';
+  document.getElementById('debugBox').style.display='none';
   document.getElementById('storyOut').classList.add('visible');
   document.getElementById('outTitle').textContent='⏳ Writing your story...';
   document.getElementById('outBody').textContent='';
@@ -292,55 +269,64 @@ document.getElementById('genBtn').addEventListener('click', async () => {
   document.getElementById('genBtn').disabled=true;
   fullText='';
 
-  const age = parseInt(document.getElementById('ageInput').value)||5;
-  const active = tags.filter(t=>t.active).map(t=>t.text);
-  const themeStr = active.length ? `Themes/elements to include: ${active.join(', ')}.` : '';
-  const langMap = {
-    english: 'Write the story entirely in English.',
-    french: "Écris l'histoire entièrement en français.",
-    russian: 'Напиши историю полностью на русском языке.',
+  const age=parseInt(document.getElementById('ageInput').value)||5;
+  const active=tags.filter(t=>t.active).map(t=>t.text);
+  const themeStr=active.length?`Themes to include: ${active.join(', ')}.`:'';
+  const langMap={
+    english:'Write the entire story in English.',
+    french:'Écris toute l\'histoire en français.',
+    russian:'Напиши всю историю на русском языке.',
   };
 
-  const prompt = `You are a warm, gentle bedtime story narrator. Write a complete bedtime story for a ${age}-year-old child. The story should:
-- Be approximately 500-600 words (about 5 minutes when read aloud slowly)
-- Have a simple, calming narrative arc with a clear positive message
-- Be engaging and imaginative but NOT exciting or stimulating — help the child relax and drift to sleep
-- End on a peaceful, sleepy, comforting note
-- Use age-appropriate vocabulary for a ${age}-year-old
+  const prompt=`Write a bedtime story for a ${age}-year-old child.
+Rules:
+- First line: only the story title (no label, no quotes)
+- Second line: blank
+- Then the full story body: 5-6 paragraphs, approximately 400-500 words
+- Calm, gentle tone — helps child fall asleep
+- Simple positive message
+- End peacefully
 - ${themeStr}
 - ${langMap[lang]}
-
-Start with a title on the first line (just the title, no "Title:" prefix), then a blank line, then the story. Plain text only, no markdown formatting.`;
+- Plain text only, no markdown, no asterisks, no bullet points`;
 
   try {
-    // Use non-streaming generateContent endpoint — most reliable across all Gemini models
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
       {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.9, maxOutputTokens: 4000 }
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          contents:[{parts:[{text:prompt}]}],
+          generationConfig:{
+            temperature:0.85,
+            maxOutputTokens:8192,
+            topP:0.95
+          }
         })
       }
     );
 
     const json = await res.json();
 
-    if (!res.ok) {
-      throw new Error(json.error?.message || res.statusText);
-    }
+    // Show debug info
+    const debugEl = document.getElementById('debugBox');
+    debugEl.textContent = 'finish_reason: ' + (json.candidates?.[0]?.finishReason || 'unknown') +
+      '\ntoken_count: ' + (json.usageMetadata?.candidatesTokenCount || 'unknown');
+    debugEl.style.display = 'block';
 
-    // Extract full text from response
-    const raw = json.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+    if (!res.ok) throw new Error(json.error?.message || res.statusText);
 
-    if (!raw) throw new Error('Empty response from Gemini');
+    // Collect all text parts
+    const parts = json.candidates?.[0]?.content?.parts || [];
+    const raw = parts.map(p => p.text || '').join('').trim();
 
-    // Split title from body
-    const lines = raw.split('\n');
-    const titleText = lines[0].trim();
-    const bodyText = lines.slice(1).join('\n').replace(/^\n+/, '').trim();
+    if (!raw) throw new Error('Empty response — finish_reason: ' + (json.candidates?.[0]?.finishReason || 'unknown'));
+
+    // Split title from body on first newline
+    const firstNL = raw.indexOf('\n');
+    const titleText = firstNL > -1 ? raw.slice(0, firstNL).trim() : raw;
+    const bodyText  = firstNL > -1 ? raw.slice(firstNL).replace(/^\n+/, '').trim() : '';
 
     document.getElementById('outTitle').textContent = titleText;
     document.getElementById('outBody').textContent = bodyText;
@@ -349,7 +335,7 @@ Start with a title on the first line (just the title, no "Title:" prefix), then 
 
   } catch(err) {
     document.getElementById('outTitle').textContent='';
-    document.getElementById('errMsg').textContent = 'Error: ' + err.message;
+    document.getElementById('errMsg').textContent='Error: '+err.message;
   }
 
   document.getElementById('genBtn').disabled=false;
