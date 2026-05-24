@@ -60,9 +60,9 @@ input::placeholder{color:var(--text-3)}
 .status-dot{width:7px;height:7px;border-radius:50%;background:var(--text-3);flex-shrink:0}
 .status-dot.ok{background:var(--green)}
 .status-dot.warn{background:#fbbf24}
+.voice-badge{margin-left:auto;font-size:0.68rem;color:var(--text-3);background:var(--bg-3);padding:2px 7px;border-radius:4px}
 .tts-note{font-size:0.72rem;color:var(--text-3);margin-top:0.5rem;text-align:center}
 .error-msg{color:var(--red);font-size:0.82rem;text-align:center;padding:0.4rem;margin-top:0.5rem}
-.debug-box{background:var(--bg-2);border:1px solid var(--border-md);border-radius:6px;padding:0.8rem;margin-top:0.8rem;font-size:0.72rem;color:var(--text-3);font-family:monospace;white-space:pre-wrap;display:none}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border-md);border-radius:2px}
@@ -78,7 +78,8 @@ input::placeholder{color:var(--text-3)}
 
 <div class="status-bar" id="statusBar">
   <div class="status-dot" id="statusDot"></div>
-  <span id="statusText">Checking API key...</span>
+  <span id="statusText">Checking API keys...</span>
+  <span class="voice-badge" id="voiceBadge"></span>
 </div>
 
 <div class="panel">
@@ -121,7 +122,6 @@ input::placeholder{color:var(--text-3)}
   </div>
   <div class="tts-note" id="ttsNote"></div>
   <div class="error-msg" id="errMsg"></div>
-  <div class="debug-box" id="debugBox"></div>
 </div>
 
 <script>
@@ -129,26 +129,55 @@ let lang = 'english';
 let tags = [{text:'pirate',active:true},{text:'treasure',active:true},{text:'dragon',active:false}];
 let fullText = '';
 let geminiKey = '';
+let elevenKey = '';
 let isSpeaking = false;
-let audioEl = null;
+let currentAudio = null;
 let progressTimer = null;
+let audioChunks = [];
+let currentChunkIdx = 0;
 
+// ── Voice IDs per language ──
+const VOICES = {
+  english: ['4YYIPFl9wE5c4L2eu2Gb','8dEUmyPMdDdK91vboYih','wGcFBfKz5yUQqhqr0mVy'],
+  french:  ['EMuO6fFLrXKOryHzij6K','cuo3D4C6LVenyV7b2Kpd','5l4ttmr4SKNgi0HnOelT','UBXZKOKbt62aLQHhc1Jm'],
+  russian: ['ymDCYd8puC7gYjxIamPt','8oyYKsAD3g8uVOXOQB4Z','XuEV9VY3VUASYgJVNBh0'],
+};
+
+function pickVoice() {
+  const list = VOICES[lang];
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+// ── Receive keys from dashboard ──
 window.addEventListener('message', e => {
-  if (e.data?.type === 'GEMINI_KEY') { geminiKey = e.data.key; updateStatus(); }
+  if (e.data?.type === 'GEMINI_KEY')  { geminiKey  = e.data.key; updateStatus(); }
+  if (e.data?.type === 'ELEVEN_KEY')  { elevenKey  = e.data.key; updateStatus(); }
 });
 
-function getKey() {
-  return geminiKey || localStorage.getItem('philou_gemini_key') || '';
-}
+function getGeminiKey()  { return geminiKey  || localStorage.getItem('philou_gemini_key')  || ''; }
+function getElevenKey()  { return elevenKey  || localStorage.getItem('philou_eleven_key')  || ''; }
 
 function updateStatus() {
-  const key = getKey();
+  const gk = getGeminiKey(); const ek = getElevenKey();
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
-  if (key) { dot.className='status-dot ok'; txt.textContent='Gemini connected — ready'; }
-  else { dot.className='status-dot warn'; txt.textContent='No API key — add Gemini key in Dashboard Settings'; }
+  const badge = document.getElementById('voiceBadge');
+  if (gk && ek) {
+    dot.className='status-dot ok';
+    txt.textContent='Gemini + ElevenLabs connected';
+    badge.textContent='🎙 AI voice';
+  } else if (gk) {
+    dot.className='status-dot warn';
+    txt.textContent='Gemini connected — add ElevenLabs key for voice';
+    badge.textContent='🔇 No voice key';
+  } else {
+    dot.className='status-dot warn';
+    txt.textContent='No API keys — add them in Dashboard Settings';
+    badge.textContent='';
+  }
 }
 
+// ── Language ──
 document.querySelectorAll('.lang-btn').forEach(b => {
   b.addEventListener('click', () => {
     document.querySelectorAll('.lang-btn').forEach(x => x.classList.remove('active'));
@@ -156,6 +185,7 @@ document.querySelectorAll('.lang-btn').forEach(b => {
   });
 });
 
+// ── Tags ──
 function renderTags() {
   const w = document.getElementById('tagsWrap');
   w.innerHTML = '';
@@ -168,7 +198,6 @@ function renderTags() {
     w.appendChild(el);
   });
 }
-
 function addTag() {
   const v = document.getElementById('tagInput').value.trim().toLowerCase();
   if (!v || tags.find(t => t.text === v)) return;
@@ -181,87 +210,149 @@ document.getElementById('tagInput').addEventListener('keydown', e => { if(e.key=
 
 function fmt(s) { return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`; }
 
-const LANG_CODES = { english:'en', french:'fr', russian:'ru' };
-
-function stopAudio() {
-  if (audioEl) { audioEl.pause(); audioEl.src=''; audioEl=null; }
-  clearInterval(progressTimer); isSpeaking=false;
-  document.getElementById('playBtn').textContent='▶';
-  document.getElementById('fill').style.width='0%';
-  document.getElementById('tElapsed').textContent='0:00';
+// ── Audio playback (fully reset on each story) ──
+function resetAudio() {
+  if (currentAudio) { currentAudio.pause(); currentAudio.src=''; currentAudio=null; }
+  clearInterval(progressTimer);
+  isSpeaking = false;
+  audioChunks = [];
+  currentChunkIdx = 0;
+  document.getElementById('playBtn').textContent = '▶';
+  document.getElementById('fill').style.width = '0%';
+  document.getElementById('tElapsed').textContent = '0:00';
+  document.getElementById('tDur').textContent = '--:--';
 }
 
-function splitChunks(text, maxLen) {
-  const sentences = text.match(/[^.!?…\n]+[.!?…\n]*/g) || [text];
-  const chunks=[]; let cur='';
-  for (const s of sentences) {
-    if ((cur+s).length > maxLen && cur) { chunks.push(cur.trim()); cur=s; } else cur+=s;
-  }
-  if (cur.trim()) chunks.push(cur.trim());
-  return chunks;
+function startProgress() {
+  const estSecs = (fullText.split(/\s+/).length / 130) * 60;
+  document.getElementById('tDur').textContent = fmt(estSecs);
+  const start = Date.now();
+  clearInterval(progressTimer);
+  progressTimer = setInterval(() => {
+    if (!isSpeaking) return;
+    const e = (Date.now()-start)/1000;
+    document.getElementById('tElapsed').textContent = fmt(e);
+    document.getElementById('fill').style.width = Math.min((e/estSecs)*100,100)+'%';
+  }, 500);
 }
 
-function playChunks(chunks, idx) {
-  if (idx >= chunks.length) {
-    isSpeaking=false; document.getElementById('playBtn').textContent='▶';
-    document.getElementById('fill').style.width='100%'; clearInterval(progressTimer); return;
+// ── ElevenLabs TTS ──
+async function speakWithElevenLabs(text) {
+  const key = getElevenKey();
+  if (!key) { fallbackTTS(text); return; }
+
+  const voiceId = pickVoice();
+  document.getElementById('ttsNote').textContent = '⏳ Generating voice...';
+  document.getElementById('playBtn').textContent = '⏳';
+
+  try {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': key,
+        'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg'
+      },
+      body: JSON.stringify({
+        text: text,
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.4, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true }
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.detail?.message || err.detail || res.statusText);
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    currentAudio = audio;
+    document.getElementById('ttsNote').textContent = '';
+    document.getElementById('playBtn').textContent = '⏸';
+    isSpeaking = true;
+    startProgress();
+
+    audio.play();
+    audio.onended = () => {
+      isSpeaking = false;
+      clearInterval(progressTimer);
+      document.getElementById('playBtn').textContent = '▶';
+      document.getElementById('fill').style.width = '100%';
+      URL.revokeObjectURL(url);
+    };
+    audio.onerror = () => {
+      isSpeaking = false;
+      document.getElementById('playBtn').textContent = '▶';
+      document.getElementById('ttsNote').textContent = '⚠ Audio error — try again';
+    };
+
+  } catch(err) {
+    document.getElementById('ttsNote').textContent = '⚠ ElevenLabs error: ' + err.message + ' — using browser voice';
+    document.getElementById('playBtn').textContent = '▶';
+    fallbackTTS(text);
   }
-  const code = LANG_CODES[lang];
-  const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(chunks[idx])}&tl=${code}&client=tw-ob`;
-  const audio = new Audio(url); audioEl=audio;
-  if (idx===0) {
-    const estSecs=(fullText.split(/\s+/).length/130)*60;
-    document.getElementById('tDur').textContent=fmt(estSecs);
-    const start=Date.now();
-    progressTimer=setInterval(()=>{
-      const e=(Date.now()-start)/1000;
-      document.getElementById('tElapsed').textContent=fmt(e);
-      document.getElementById('fill').style.width=Math.min((e/estSecs)*100,100)+'%';
-    },500);
-    isSpeaking=true; document.getElementById('playBtn').textContent='⏸';
-  }
-  audio.onended=()=>playChunks(chunks,idx+1);
-  audio.onerror=()=>{ clearInterval(progressTimer); isSpeaking=false; document.getElementById('playBtn').textContent='▶'; fallbackTTS(fullText); };
-  audio.play().catch(()=>{ isSpeaking=false; document.getElementById('playBtn').textContent='▶'; document.getElementById('ttsNote').textContent='⚠ Tap Play to start'; });
 }
 
+// ── Fallback browser TTS ──
 function fallbackTTS(text) {
-  const synth=window.speechSynthesis; synth.cancel();
-  const utter=new SpeechSynthesisUtterance(text);
-  const codes={english:'en-US',french:'fr-FR',russian:'ru-RU'};
-  utter.lang=codes[lang]; utter.rate=0.85;
-  const voices=synth.getVoices(); const prefix=codes[lang].split('-')[0];
-  const v=voices.find(v=>v.lang===codes[lang])||voices.find(v=>v.lang.startsWith(prefix));
-  if(v) utter.voice=v; synth.speak(utter);
-  isSpeaking=true; document.getElementById('playBtn').textContent='⏸';
-  const estSecs=(text.split(/\s+/).length/130)*60;
-  document.getElementById('tDur').textContent=fmt(estSecs);
-  const start=Date.now();
-  progressTimer=setInterval(()=>{
-    const e=(Date.now()-start)/1000;
-    document.getElementById('tElapsed').textContent=fmt(e);
-    document.getElementById('fill').style.width=Math.min((e/estSecs)*100,100)+'%';
-  },500);
-  utter.onend=()=>{ clearInterval(progressTimer); isSpeaking=false; document.getElementById('playBtn').textContent='▶'; };
+  const synth = window.speechSynthesis; synth.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  const codes = { english:'en-US', french:'fr-FR', russian:'ru-RU' };
+  utter.lang = codes[lang]; utter.rate = 0.85;
+  const voices = synth.getVoices();
+  const prefix = codes[lang].split('-')[0];
+  const v = voices.find(v=>v.lang===codes[lang]) || voices.find(v=>v.lang.startsWith(prefix));
+  if (v) utter.voice = v;
+  synth.speak(utter);
+  isSpeaking = true;
+  document.getElementById('playBtn').textContent = '⏸';
+  startProgress();
+  utter.onend = () => {
+    clearInterval(progressTimer); isSpeaking=false;
+    document.getElementById('playBtn').textContent='▶';
+  };
 }
 
-document.getElementById('playBtn').addEventListener('click', ()=>{
+// ── Play button ──
+document.getElementById('playBtn').addEventListener('click', () => {
   if (!fullText) return;
-  if (isSpeaking) { stopAudio(); window.speechSynthesis?.cancel(); }
-  else { document.getElementById('ttsNote').textContent=''; playChunks(splitChunks(fullText,195),0); }
+  if (isSpeaking) {
+    // Pause
+    if (currentAudio) currentAudio.pause();
+    window.speechSynthesis?.pause();
+    clearInterval(progressTimer);
+    isSpeaking = false;
+    document.getElementById('playBtn').textContent = '▶';
+  } else {
+    // Resume or start fresh
+    if (currentAudio && currentAudio.paused) {
+      currentAudio.play();
+      isSpeaking = true;
+      document.getElementById('playBtn').textContent = '⏸';
+      startProgress();
+    } else {
+      document.getElementById('ttsNote').textContent = '';
+      speakWithElevenLabs(fullText);
+    }
+  }
 });
 
+// ── Generate with Gemini ──
 document.getElementById('genBtn').addEventListener('click', async () => {
-  stopAudio(); window.speechSynthesis?.cancel();
-  const key = getKey();
-  if (!key) {
-    document.getElementById('errMsg').textContent='No Gemini API key — add it in Dashboard Settings.';
+  // Fully reset audio state for new story
+  resetAudio();
+  window.speechSynthesis?.cancel();
+
+  const gk = getGeminiKey();
+  if (!gk) {
+    document.getElementById('errMsg').textContent = 'No Gemini API key — add it in Dashboard Settings.';
     document.getElementById('storyOut').classList.add('visible'); return;
   }
 
   document.getElementById('errMsg').textContent='';
   document.getElementById('ttsNote').textContent='';
-  document.getElementById('debugBox').style.display='none';
   document.getElementById('storyOut').classList.add('visible');
   document.getElementById('outTitle').textContent='⏳ Writing your story...';
   document.getElementById('outBody').textContent='';
@@ -269,16 +360,16 @@ document.getElementById('genBtn').addEventListener('click', async () => {
   document.getElementById('genBtn').disabled=true;
   fullText='';
 
-  const age=parseInt(document.getElementById('ageInput').value)||5;
-  const active=tags.filter(t=>t.active).map(t=>t.text);
-  const themeStr=active.length?`Themes to include: ${active.join(', ')}.`:'';
-  const langMap={
-    english:'Write the entire story in English.',
-    french:'Écris toute l\'histoire en français.',
-    russian:'Напиши всю историю на русском языке.',
+  const age = parseInt(document.getElementById('ageInput').value)||5;
+  const active = tags.filter(t=>t.active).map(t=>t.text);
+  const themeStr = active.length ? `Themes to include: ${active.join(', ')}.` : '';
+  const langMap = {
+    english: 'Write the entire story in English.',
+    french:  "Écris toute l'histoire en français.",
+    russian: 'Напиши всю историю на русском языке.',
   };
 
-  const prompt=`Write a bedtime story for a ${age}-year-old child.
+  const prompt = `Write a bedtime story for a ${age}-year-old child.
 Rules:
 - First line: only the story title (no label, no quotes)
 - Second line: blank
@@ -292,41 +383,26 @@ Rules:
 
   try {
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${gk}`,
       {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           contents:[{parts:[{text:prompt}]}],
-          generationConfig:{
-            temperature:0.85,
-            maxOutputTokens:8192,
-            topP:0.95
-          }
+          generationConfig:{ temperature:0.85, maxOutputTokens:8192, topP:0.95 }
         })
       }
     );
 
     const json = await res.json();
-
-    // Show debug info
-    const debugEl = document.getElementById('debugBox');
-    debugEl.textContent = 'finish_reason: ' + (json.candidates?.[0]?.finishReason || 'unknown') +
-      '\ntoken_count: ' + (json.usageMetadata?.candidatesTokenCount || 'unknown');
-    debugEl.style.display = 'block';
-
     if (!res.ok) throw new Error(json.error?.message || res.statusText);
 
-    // Collect all text parts
-    const parts = json.candidates?.[0]?.content?.parts || [];
-    const raw = parts.map(p => p.text || '').join('').trim();
+    const raw = (json.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('').trim();
+    if (!raw) throw new Error('Empty response from Gemini');
 
-    if (!raw) throw new Error('Empty response — finish_reason: ' + (json.candidates?.[0]?.finishReason || 'unknown'));
-
-    // Split title from body on first newline
     const firstNL = raw.indexOf('\n');
     const titleText = firstNL > -1 ? raw.slice(0, firstNL).trim() : raw;
-    const bodyText  = firstNL > -1 ? raw.slice(firstNL).replace(/^\n+/, '').trim() : '';
+    const bodyText  = firstNL > -1 ? raw.slice(firstNL).replace(/^\n+/,'').trim() : '';
 
     document.getElementById('outTitle').textContent = titleText;
     document.getElementById('outBody').textContent = bodyText;
