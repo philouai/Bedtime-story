@@ -53,6 +53,8 @@ input::placeholder{color:var(--text-3)}
 .audio-bar{display:flex;align-items:center;gap:12px;margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--border)}
 .play-btn{width:48px;height:48px;border-radius:50%;flex-shrink:0;background:var(--accent-lo);border:1px solid rgba(201,168,76,0.3);color:var(--accent);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.18s}
 .play-btn:hover{background:var(--accent-md)}
+.wake-btn{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--bg-2);border:1px solid var(--border-md);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.18s;opacity:0.5}
+.wake-btn.active{background:rgba(201,168,76,0.15);border-color:rgba(201,168,76,0.4);opacity:1}
 .track{width:100%;height:3px;background:var(--bg-3);border-radius:2px;margin-bottom:5px;overflow:hidden}
 .fill{height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width 0.5s linear}
 .times{display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-3)}
@@ -62,8 +64,6 @@ input::placeholder{color:var(--text-3)}
 .status-dot.warn{background:#fbbf24}
 .tts-note{font-size:0.72rem;color:var(--text-3);margin-top:0.5rem;text-align:center}
 .error-msg{color:var(--red);font-size:0.82rem;text-align:center;padding:0.4rem;margin-top:0.5rem}
-.wake-btn{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:var(--bg-2);border:1px solid var(--border-md);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.18s;opacity:0.5}
-.wake-btn.active{background:rgba(201,168,76,0.15);border-color:rgba(201,168,76,0.4);opacity:1}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border-md);border-radius:2px}
@@ -131,30 +131,35 @@ let tags = [{text:'pirate',active:true},{text:'treasure',active:true},{text:'dra
 let fullText = '';
 let geminiKey = '';
 let isSpeaking = false;
-let currentAudio = null;
 let progressTimer = null;
+let utterance = null;
+let wakeLock = null;
+let startTime = null;
+let pausedAt = 0;
 
-// Warm, calm, slow voices via FreeTTS (Azure Neural) — no API key needed
-const TTS_VOICES = {
-  english: 'en-GB-OliviaNeutral',   // warm British female, great for storytelling
-  french:  'fr-FR-DeniseNeural',     // warm natural French female
-  russian: 'ru-RU-SvetlanaNeural',   // calm warm Russian female
+// Lang codes and voice preferences
+const LANG_CONFIG = {
+  english: { code: 'en-GB', fallback: 'en', rate: 0.82, pitch: 0.95 },
+  french:  { code: 'fr-FR', fallback: 'fr', rate: 0.82, pitch: 0.95 },
+  russian: { code: 'ru-RU', fallback: 'ru', rate: 0.80, pitch: 0.90 },
 };
 
+// Receive key from dashboard
 window.addEventListener('message', e => {
   if (e.data?.type === 'GEMINI_KEY') { geminiKey = e.data.key; updateStatus(); }
 });
 
-function getGeminiKey() { return geminiKey || localStorage.getItem('philou_gemini_key') || ''; }
+function getKey() { return geminiKey || localStorage.getItem('philou_gemini_key') || ''; }
 
 function updateStatus() {
-  const k = getGeminiKey();
+  const k = getKey();
   const dot = document.getElementById('statusDot');
   const txt = document.getElementById('statusText');
-  if (k) { dot.className='status-dot ok'; txt.textContent='Ready — voice by FreeTTS (free, no key needed)'; }
+  if (k) { dot.className='status-dot ok'; txt.textContent='Ready — voice uses your device (no extra key needed)'; }
   else { dot.className='status-dot warn'; txt.textContent='No Gemini key — add it in Dashboard Settings'; }
 }
 
+// Language
 document.querySelectorAll('.lang-btn').forEach(b => {
   b.addEventListener('click', () => {
     document.querySelectorAll('.lang-btn').forEach(x => x.classList.remove('active'));
@@ -162,6 +167,7 @@ document.querySelectorAll('.lang-btn').forEach(b => {
   });
 });
 
+// Tags
 function renderTags() {
   const w = document.getElementById('tagsWrap');
   w.innerHTML = '';
@@ -186,84 +192,127 @@ document.getElementById('tagInput').addEventListener('keydown', e => { if(e.key=
 
 function fmt(s) { return `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`; }
 
-// ── Reset audio fully on new story ──
+// ── Wake Lock ──
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    document.getElementById('wakeBtn').classList.add('active');
+    wakeLock.addEventListener('release', () => {
+      wakeLock = null;
+      document.getElementById('wakeBtn').classList.remove('active');
+    });
+  } catch(e) {}
+}
+async function releaseWakeLock() {
+  if (wakeLock) { await wakeLock.release(); wakeLock = null; }
+  document.getElementById('wakeBtn').classList.remove('active');
+}
+document.getElementById('wakeBtn').addEventListener('click', async () => {
+  if (wakeLock) await releaseWakeLock();
+  else await requestWakeLock();
+});
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && isSpeaking && !wakeLock) {
+    await requestWakeLock();
+  }
+});
+
+// ── Best voice picker ──
+function getBestVoice(config) {
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  // Try exact locale first, then language prefix, prefer non-compact/non-remote
+  return (
+    voices.find(v => v.lang === config.code && !v.name.toLowerCase().includes('compact')) ||
+    voices.find(v => v.lang === config.code) ||
+    voices.find(v => v.lang.startsWith(config.fallback) && !v.name.toLowerCase().includes('compact')) ||
+    voices.find(v => v.lang.startsWith(config.fallback)) ||
+    null
+  );
+}
+
+// ── Reset audio ──
 function resetAudio() {
-  if (currentAudio) { currentAudio.pause(); currentAudio.src=''; currentAudio=null; }
+  window.speechSynthesis.cancel();
   clearInterval(progressTimer);
   isSpeaking = false;
+  utterance = null;
+  pausedAt = 0;
+  startTime = null;
   document.getElementById('playBtn').textContent = '▶';
   document.getElementById('fill').style.width = '0%';
   document.getElementById('tElapsed').textContent = '0:00';
   document.getElementById('tDur').textContent = '--:--';
 }
 
-function startProgress() {
-  const estSecs = (fullText.split(/\s+/).length / 110) * 60; // slower rate
-  document.getElementById('tDur').textContent = fmt(estSecs);
-  const start = Date.now();
+// ── Progress timer ──
+function startProgressTimer(totalSecs, fromSecs = 0) {
   clearInterval(progressTimer);
+  startTime = Date.now() - (fromSecs * 1000);
   progressTimer = setInterval(() => {
     if (!isSpeaking) return;
-    const e = (Date.now()-start)/1000;
-    document.getElementById('tElapsed').textContent = fmt(e);
-    document.getElementById('fill').style.width = Math.min((e/estSecs)*100,100)+'%';
+    const elapsed = (Date.now() - startTime) / 1000;
+    document.getElementById('tElapsed').textContent = fmt(elapsed);
+    document.getElementById('fill').style.width = Math.min((elapsed / totalSecs) * 100, 100) + '%';
   }, 500);
 }
 
-// ── FreeTTS playback ──
-async function speakWithFreeTTS(text) {
-  const voice = TTS_VOICES[lang];
-  document.getElementById('ttsNote').textContent = '⏳ Generating voice...';
-  document.getElementById('playBtn').textContent = '⏳';
+// ── Speak ──
+function speak(text) {
+  window.speechSynthesis.cancel();
+  const config = LANG_CONFIG[lang];
+  const estSecs = (text.split(/\s+/).length / 110) * 60;
+  document.getElementById('tDur').textContent = fmt(estSecs);
 
-  try {
-    // Step 1: request TTS
-    const res = await fetch('https://freetts.org/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: text,
-        voice: voice,
-        rate: '-10%',   // slightly slower — calm bedtime pace
-        pitch: '-2Hz'   // slightly lower — warm, soothing tone
-      })
-    });
+  utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = config.code;
+  utterance.rate = config.rate;
+  utterance.pitch = config.pitch;
 
-    if (!res.ok) throw new Error('FreeTTS error ' + res.status);
-    const { file_id } = await res.json();
-    if (!file_id) throw new Error('No file_id returned');
+  const trySpeak = () => {
+    const voice = getBestVoice(config);
+    if (voice) {
+      utterance.voice = voice;
+      document.getElementById('ttsNote').textContent = '🎙 ' + voice.name;
+    } else {
+      document.getElementById('ttsNote').textContent = '🎙 Default device voice';
+    }
 
-    // Step 2: fetch the MP3
-    const audioRes = await fetch(`https://freetts.org/api/audio/${file_id}`);
-    if (!audioRes.ok) throw new Error('Audio fetch error ' + audioRes.status);
-    const blob = await audioRes.blob();
-    const url = URL.createObjectURL(blob);
+    utterance.onstart = () => {
+      isSpeaking = true;
+      document.getElementById('playBtn').textContent = '⏸';
+      startProgressTimer(estSecs);
+      requestWakeLock();
+    };
 
-    const audio = new Audio(url);
-    currentAudio = audio;
-    document.getElementById('ttsNote').textContent = '';
-    document.getElementById('playBtn').textContent = '⏸';
-    isSpeaking = true;
-    startProgress();
-
-    audio.play();
-    audio.onended = () => {
+    utterance.onend = () => {
       isSpeaking = false;
       clearInterval(progressTimer);
       document.getElementById('playBtn').textContent = '▶';
       document.getElementById('fill').style.width = '100%';
-      URL.revokeObjectURL(url);
-    };
-    audio.onerror = () => {
-      isSpeaking = false;
-      document.getElementById('playBtn').textContent = '▶';
-      document.getElementById('ttsNote').textContent = '⚠ Audio error — try again';
+      releaseWakeLock();
     };
 
-  } catch(err) {
-    document.getElementById('ttsNote').textContent = '⚠ Voice error: ' + err.message;
-    document.getElementById('playBtn').textContent = '▶';
-    isSpeaking = false;
+    utterance.onerror = (e) => {
+      if (e.error === 'interrupted') return; // normal when cancelled
+      isSpeaking = false;
+      clearInterval(progressTimer);
+      document.getElementById('playBtn').textContent = '▶';
+      document.getElementById('ttsNote').textContent = '⚠ Voice error: ' + e.error;
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Voices may not be loaded yet on first call
+  if (window.speechSynthesis.getVoices().length > 0) {
+    trySpeak();
+  } else {
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.onvoiceschanged = null;
+      trySpeak();
+    };
   }
 }
 
@@ -271,28 +320,26 @@ async function speakWithFreeTTS(text) {
 document.getElementById('playBtn').addEventListener('click', () => {
   if (!fullText) return;
   if (isSpeaking) {
-    if (currentAudio) { currentAudio.pause(); }
+    window.speechSynthesis.pause();
     clearInterval(progressTimer);
     isSpeaking = false;
     document.getElementById('playBtn').textContent = '▶';
+  } else if (window.speechSynthesis.paused) {
+    window.speechSynthesis.resume();
+    isSpeaking = true;
+    document.getElementById('playBtn').textContent = '⏸';
+    const estSecs = (fullText.split(/\s+/).length / 110) * 60;
+    startProgressTimer(estSecs, (Date.now() - startTime) / 1000);
   } else {
-    if (currentAudio && currentAudio.paused && currentAudio.src) {
-      currentAudio.play();
-      isSpeaking = true;
-      document.getElementById('playBtn').textContent = '⏸';
-      startProgress();
-    } else {
-      document.getElementById('ttsNote').textContent = '';
-      speakWithFreeTTSWrapped(fullText);
-    }
+    document.getElementById('ttsNote').textContent = '';
+    speak(fullText);
   }
 });
 
-// ── Generate with Gemini ──
+// ── Generate ──
 document.getElementById('genBtn').addEventListener('click', async () => {
   resetAudio();
-
-  const gk = getGeminiKey();
+  const gk = getKey();
   if (!gk) {
     document.getElementById('errMsg').textContent = 'No Gemini API key — add it in Dashboard Settings.';
     document.getElementById('storyOut').classList.add('visible'); return;
@@ -322,8 +369,7 @@ Rules:
 - Second line: blank
 - Then the full story body: 5-6 paragraphs, approximately 400-500 words
 - Calm, gentle tone — helps child fall asleep
-- Simple positive message
-- End peacefully and sleepily
+- Simple positive message, end peacefully and sleepily
 - ${themeStr}
 - ${langMap[lang]}
 - Plain text only, no markdown, no asterisks, no bullet points`;
@@ -340,76 +386,22 @@ Rules:
         })
       }
     );
-
     const json = await res.json();
     if (!res.ok) throw new Error(json.error?.message || res.statusText);
-
     const raw = (json.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('').trim();
     if (!raw) throw new Error('Empty response from Gemini');
-
     const firstNL = raw.indexOf('\n');
     const titleText = firstNL > -1 ? raw.slice(0,firstNL).trim() : raw;
     const bodyText  = firstNL > -1 ? raw.slice(firstNL).replace(/^\n+/,'').trim() : '';
-
     document.getElementById('outTitle').textContent = titleText;
     document.getElementById('outBody').textContent = bodyText;
     fullText = titleText + '.\n\n' + bodyText;
     document.getElementById('audioBar').style.display='flex';
-    // auto request wake lock when story is ready
-    requestWakeLock();
-
   } catch(err) {
     document.getElementById('outTitle').textContent='';
     document.getElementById('errMsg').textContent='Error: '+err.message;
   }
-
   document.getElementById('genBtn').disabled=false;
-});
-
-// ── Wake Lock (keep screen on while story plays) ──
-let wakeLock = null;
-
-async function requestWakeLock() {
-  if (!('wakeLock' in navigator)) {
-    document.getElementById('ttsNote').textContent = '⚠ Wake Lock not supported on this browser';
-    return;
-  }
-  try {
-    wakeLock = await navigator.wakeLock.request('screen');
-    document.getElementById('wakeBtn').classList.add('active');
-    document.getElementById('wakeBtn').title = 'Screen will stay on ✓';
-    wakeLock.addEventListener('release', () => {
-      document.getElementById('wakeBtn').classList.remove('active');
-      document.getElementById('wakeBtn').title = 'Keep screen awake';
-      wakeLock = null;
-    });
-  } catch(err) {
-    document.getElementById('ttsNote').textContent = '⚠ Could not keep screen awake: ' + err.message;
-  }
-}
-
-async function releaseWakeLock() {
-  if (wakeLock) { await wakeLock.release(); wakeLock = null; }
-  document.getElementById('wakeBtn').classList.remove('active');
-}
-
-document.getElementById('wakeBtn').addEventListener('click', async () => {
-  if (wakeLock) { await releaseWakeLock(); }
-  else { await requestWakeLock(); }
-});
-
-// Auto request wake lock when story starts playing, release when done
-const origSpeakWithFreeTTS = speakWithFreeTTS;
-async function speakWithFreeTTSWrapped(text) {
-  await requestWakeLock();
-  await origSpeakWithFreeTTS(text);
-}
-
-// Re-acquire wake lock if page becomes visible again (e.g. user unlocks phone)
-document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState === 'visible' && isSpeaking && !wakeLock) {
-    await requestWakeLock();
-  }
 });
 
 renderTags();
